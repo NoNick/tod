@@ -4,6 +4,7 @@
 #include <boost/program_options.hpp>
 #include "server.h"
 #include "txt.cpp"
+#include "obtainer.h"
 
 namespace po = boost::program_options;
 
@@ -41,7 +42,7 @@ int main(int ac, char *av[]) {
     }
     
     if (verbose) {
-	cout << "Ready to accept connections\n";
+	cout << "Ready to accept connections\nPort: " + port + "\n";
     }
     int fd;
     while (true) {
@@ -49,10 +50,9 @@ int main(int ac, char *av[]) {
 	if (fd == -1) {
 	    cerr << "Failed to accept connection\n";
 	} else {
-	    if (verbose) {
-		cout << "New connection\n";
-	    }
-	    // TODO: new obtainer thread
+	    // TODO: threads
+	    Obtainer ob(fd);
+	    ob.run();
 	}
     }
 
