@@ -49,10 +49,10 @@ int main(int ac, char *av[]) {
 	fd = serv->getClient();
 	if (fd == -1) {
 	    cerr << "Failed to accept connection\n";
-	} else {
-	    // TODO: threads
+	} else if (fork() == 0) {
 	    Obtainer ob(fd);
 	    ob.run();
+	    _exit(0);
 	}
     }
 

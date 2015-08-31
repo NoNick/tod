@@ -1,9 +1,14 @@
 #include <unistd.h>
 #include <string.h>
 #include <iostream>
+#include <pthread.h>
+#include <libtorrent/torrent_info.hpp>
+#include <libtorrent/bencode.hpp>
 #include "helpers.h"
 
 #define critical(X, Y) if ((X) == -1) {std::cerr << Y << "\n"; _exit(3);}
+
+namespace lt = libtorrent;
 
 int read_(int fd, void *buf, size_t count) {
     int n;
@@ -80,3 +85,37 @@ ssize_t buf_flush(int fd, buf_t *buf, size_t required) {
     return n;
 }
 
+void printInfo(lt::torrent_info *t) {
+    printf("number of pieces: %d\n"
+	   "piece length: %d\n"
+	   "comment: %s\n"
+	   "created by: %s\n"
+	   "name: %s\n"
+	   "number of files: %d\n"
+	   "files:\n"
+	   , t->num_pieces()
+	   , t->piece_length()
+	   , t->comment().c_str()
+	   , t->creator().c_str()
+	   , t->name().c_str()
+	   , t->num_files());
+    lt::file_storage const& st = t->files();
+    for (int i = 0; i < st.num_files(); ++i) {
+	int first = st.map_file(i, 0, 0).piece;
+	int last = st.map_file(i, std::max(st.file_size(i)-1, (int64_t)0), 0).piece;
+	int flags = st.file_flags(i);
+	printf(" %8" PRIx64 " %11" PRId64 " %c%c%c%c [ %5d, %5d ] %7u %s %s %s%s\n"
+	       , st.file_offset(i)
+	       , st.file_size(i)
+	       , ((flags & lt::file_storage::flag_pad_file)?'p':'-')
+	       , ((flags & lt::file_storage::flag_executable)?'x':'-')
+	       , ((flags & lt::file_storage::flag_hidden)?'h':'-')
+	       , ((flags & lt::file_storage::flag_symlink)?'l':'-')
+	       , first, last
+	       , boost::uint32_t(st.mtime(i))
+	       , st.hash(i) != lt::sha1_hash(0) ? lt::to_hex(st.hash(i).to_string()).c_str() : ""
+	       , st.file_path(i).c_str()
+	       , (flags & lt::file_storage::flag_symlink) ? "-> " : ""
+	       , (flags & lt::file_storage::flag_symlink) ? st.symlink(i).c_str() : "");
+    }
+}

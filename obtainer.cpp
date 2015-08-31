@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <libtorrent/torrent_info.hpp>
+#include <boost/thread/thread.hpp>
 #include "obtainer.h"
 #include "helpers.h"
 
@@ -35,22 +36,6 @@ lt::torrent_info* Obtainer::getTorrent() {
 void Obtainer::run() {
     critical(handshake(sock), SHAKE_ERR);
     lt::torrent_info *t = getTorrent();
-    char ih[41];
-    lt::to_hex((char const*)&t->info_hash()[0], 20, ih);
-    printf("number of pieces: %d\n"
-	   "piece length: %d\n"
-	   "info hash: %s\n"
-	   "comment: %s\n"
-	   "created by: %s\n"
-	   "name: %s\n"
-	   "number of files: %d\n"
-	   "files:\n"
-	   , t->num_pieces()
-	   , t->piece_length()
-	   , ih
-	   , t->comment().c_str()
-	   , t->creator().c_str()
-	   , t->name().c_str()
-	   , t->num_files());
+    printInfo(t);
     delete t;
 }
