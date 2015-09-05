@@ -21,9 +21,13 @@ add_executable(tod main.cpp
 		   obtainer.h
 		   obtainer.cpp
 		   helpers.h
-		   helpers.cpp)
+		   helpers.cpp
+		   remote_interface.h
+		   mirror_storage.h
+		   mirror_storage.cpp)
 
 add_executable(toc client.cpp
+		   remote_interface.h
 		   helpers.h
 		   helpers.cpp)
 
