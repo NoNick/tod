@@ -5,16 +5,31 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <signal.h>
 #include <boost/program_options.hpp>
+#include <libtorrent/storage.hpp>
+#include <libtorrent/storage_defs.hpp>
+#include <libtorrent/torrent_info.hpp>
 #include "helpers.h"
+#include "remote_interface.h"
 
 #define critical(X, Y) if ((X) == -1) {std::cerr << Y << "\n"; _exit(3);}
+
+#define lt libtorrent
 
 namespace po = boost::program_options;
 
 using namespace std;
 
 const int BUF_SIZE = 4096;
+
+bool intrp = false;
+void handler(int sig) {
+    if (sig == SIGINT || sig == SIGPIPE) {
+	intrp = true;
+    }
+}
 
 int getSocket(string addr, int port) {
     int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -47,8 +62,19 @@ void sendFile(int sock, string file) {
     buf_free(buf);
 }
 
+lt::storage_params* getParams(std::string torrentFile) {
+    lt::error_code ec;
+    lt::torrent_info t(torrentFile, ec);
+    lt::storage_params *params = new lt::storage_params();
+    params->files = new lt::file_storage(t.files());
+    params->path = "./";
+    params->pool = new lt::file_pool();
+    return params;
+}
+
 int main (int ac, char *av[]) {
-        po::options_description desc("Allowed options");
+    
+    po::options_description desc("Allowed options");
     desc.add_options()
 	("help", "produce help message")
 	("addr", po::value<string>(), "server address")
@@ -77,7 +103,31 @@ int main (int ac, char *av[]) {
     critical(sock = getSocket(addr, port), "Unable to connect");
     critical(handshake(sock), SHAKE_ERR);
     sendFile(sock, file);
+
+    struct sigaction new_act, old_act;
+    new_act.sa_handler = handler;
+    new_act.sa_flags = 0;
+    sigemptyset(&new_act.sa_mask);
+    sigaction(SIGINT, &new_act, &old_act);
+    
+    Remote r(sock);
+    lt::storage_params *p = getParams(file);
+    lt::default_storage ds(*p);
+    while (!intrp) {
+	r.listenStorage(ds);
+    }
+    std::cout << "done\n";
+    delete p;
     close(sock);
+
+    /*    int sock;
+    critical(sock = getSocket("localhost", 1234), "Unable to connect");
+    critical(handshake(sock), SHAKE_ERR);
+    std::cout << "shaked tod\n";
+    lt::storage_params *p = getParams("~/tmp.torrent");
+    lt::default_storage ds(*p);
+    Remote r(sock);
+    r.listenStorage(ds);*/
 
     return 0;
 }

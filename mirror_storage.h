@@ -1,5 +1,6 @@
 #include <libtorrent/storage.hpp>
 #include <libtorrent/storage_defs.hpp>
+#include "remote_interface.h"
 
 #define lt libtorrent
 
@@ -19,5 +20,5 @@ public:
     void write_resume_data(lt::entry& rd, lt::storage_error& err) const;
 
 private:
-    int fd;
+    Remote r;
 };

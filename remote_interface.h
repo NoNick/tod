@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <functional>
 #include <libtorrent/storage.hpp>
+#include "synchronize.h"
 
 #define lt libtorrent
 
@@ -12,15 +13,22 @@ enum Func {
     rename_file, release_files, delete_files, initialize,
     writev_file, write_resume};
 
-int callRemote(int fd, Func f);
-template <typename ... Args>
-int callRemote(int sock, Func f, std::list<size_t> size, Args ... args);
-template <typename T>
-    int sendArgs(int fd, std::list<size_t> size, T arg);
-template <typename T, typename ... Args>
-    int sendArgs(int fd, std::list<size_t> size, T arg, Args ... args);
-
-int listen(int sock, lt::default_storage &ds);
+class Remote : protected Mutex {
+public:
+    Remote(int fd);
+    ~Remote();
+    int callRemote(Func f);
+    template <typename ... Args>
+	int callRemote(Func f, std::list<size_t> size, Args ... args);
+    int listenStorage(lt::default_storage &ds);
+private:
+    template <typename T>
+	int sendArgs(std::list<size_t> size, T arg);
+    template <typename T, typename ... Args>
+	int sendArgs(std::list<size_t> size, T arg, Args ... args);
+    int fd;
+    // TODO: queue here
+};
 
 // template issue, moving template functions in single translation unit
-#include "remote_interface.cpp"
+//#include "remote_interface.cpp"

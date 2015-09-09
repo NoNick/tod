@@ -54,6 +54,7 @@ int main(int ac, char *av[]) {
 	    ob.run();
 	    _exit(0);
 	}
+	close(fd);
     }
 
     delete serv;

@@ -85,7 +85,7 @@ ssize_t buf_flush(int fd, buf_t *buf, size_t required) {
     return n;
 }
 
-void printInfo(lt::torrent_info *t) {
+void printInfo(boost::shared_ptr<lt::torrent_info> t) {
     printf("number of pieces: %d\n"
 	   "piece length: %d\n"
 	   "comment: %s\n"

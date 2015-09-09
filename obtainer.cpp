@@ -1,13 +1,20 @@
 #include <unistd.h>
 #include <string.h>
 #include <libtorrent/torrent_info.hpp>
+#include <libtorrent/storage_defs.hpp>
+#include <libtorrent/entry.hpp>
+#include <libtorrent/bencode.hpp>
+#include <libtorrent/session.hpp>
 #include <boost/thread/thread.hpp>
+#include "mirror_storage.h"
 #include "obtainer.h"
 #include "helpers.h"
 
 #define critical(X, Y) if ((X) == -1) {std::cerr << Y << "\n"; _exit(3);}
 
-namespace lt = libtorrent;
+#define lt libtorrent
+
+#define pb push_back
 
 Obtainer::Obtainer(int socket) : sock(socket) {}
 
@@ -15,7 +22,7 @@ Obtainer::~Obtainer() {
     close(sock);
 }
 
-lt::torrent_info* Obtainer::getTorrent() {
+boost::shared_ptr<lt::torrent_info> Obtainer::getTorrent() {
     char *b = new char[4];;
     critical(read_(sock, b, 4) == 4, TOR_GET_ERR);
     size_t sz = *((int32_t*)b);
@@ -28,14 +35,52 @@ lt::torrent_info* Obtainer::getTorrent() {
     char *torrent = new char[sz];
     critical((size_t)read_(sock, torrent, sz) == sz, TOR_GET_ERR);
 
-    lt::torrent_info *info = new lt::torrent_info(torrent, sz);
+    boost::shared_ptr<lt::torrent_info> info(new lt::torrent_info(torrent, sz));
     free(torrent);
     return info;
 }
 
+int fd;
+lt::storage_interface* mirrorConstructor(lt::storage_params const& params) {
+    return new MirrorStorage(params, fd);
+}
+
 void Obtainer::run() {
     critical(handshake(sock), SHAKE_ERR);
-    lt::torrent_info *t = getTorrent();
+    boost::shared_ptr<lt::torrent_info> t = getTorrent();
     printInfo(t);
-    delete t;
+
+    lt::settings_pack sett;
+    sett.set_str(lt::settings_pack::listen_interfaces, "0.0.0.0:6881");
+    lt::session s(sett);
+    lt::error_code ec;
+    if (ec) {
+	std::cerr << "failed to open listen socket: " << ec.message() << "\n";
+	return;
+    }
+    fd = sock;
+    lt::add_torrent_params p((lt::storage_constructor_type)mirrorConstructor);
+    p.save_path = "./";
+    p.ti = t;
+    if (ec) {
+	std::cerr << ec.message() << "\n";
+	return;
+    }
+    s.add_torrent(p, ec);
+    if (ec) {
+	std::cerr << ec.message() << "\n";
+	return;
+    }
+
+    /*Remote r(sock);
+    std::list<size_t> sizes;
+    sizes.pb(4);
+    sizes.pb(sizeof(int));
+    sizes.pb(sizeof(int));
+    sizes.pb(sizeof(int));
+    sizes.pb(sizeof(int));
+    char *data = new char[4];
+    r.callRemote<void*, int, int, int, int>(Func::writev_file, sizes, (void*)data, 1, 2, 3, 4);*/
+    while (true)
+    pause();
 }
