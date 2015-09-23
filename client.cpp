@@ -62,18 +62,7 @@ void sendFile(int sock, string file) {
     buf_free(buf);
 }
 
-lt::storage_params* getParams(std::string torrentFile) {
-    lt::error_code ec;
-    lt::torrent_info t(torrentFile, ec);
-    lt::storage_params *params = new lt::storage_params();
-    params->files = new lt::file_storage(t.files());
-    params->path = "./";
-    params->pool = new lt::file_pool();
-    return params;
-}
-
 int main (int ac, char *av[]) {
-    
     po::options_description desc("Allowed options");
     desc.add_options()
 	("help", "produce help message")
@@ -111,23 +100,18 @@ int main (int ac, char *av[]) {
     sigaction(SIGINT, &new_act, &old_act);
     
     Remote r(sock);
-    lt::storage_params *p = getParams(file);
-    lt::default_storage ds(*p);
+    lt::error_code ec;
+    lt::torrent_info t(file, ec);
+    lt::storage_params params;
+    params.files = &(t.files());
+    params.path = "";
+    params.pool = new lt::file_pool();
+    lt::default_storage ds(params);
     while (!intrp) {
 	r.listenStorage(ds);
     }
     std::cout << "done\n";
-    delete p;
     close(sock);
-
-    /*    int sock;
-    critical(sock = getSocket("localhost", 1234), "Unable to connect");
-    critical(handshake(sock), SHAKE_ERR);
-    std::cout << "shaked tod\n";
-    lt::storage_params *p = getParams("~/tmp.torrent");
-    lt::default_storage ds(*p);
-    Remote r(sock);
-    r.listenStorage(ds);*/
 
     return 0;
 }
