@@ -72,15 +72,6 @@ void Obtainer::run() {
 	return;
     }
 
-    /*Remote r(sock);
-    std::list<size_t> sizes;
-    sizes.pb(4);
-    sizes.pb(sizeof(int));
-    sizes.pb(sizeof(int));
-    sizes.pb(sizeof(int));
-    sizes.pb(sizeof(int));
-    char *data = new char[4];
-    r.callRemote<void*, int, int, int, int>(Func::writev_file, sizes, (void*)data, 1, 2, 3, 4);*/
     while (true)
     pause();
 }

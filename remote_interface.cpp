@@ -15,19 +15,15 @@ Remote::Remote(int fd) : fd(fd) {}
 Remote::~Remote() { close(fd); }
 
 int Remote::callRemote(Func f) {
-    synchronized(this) {
-	success(write_(fd, &f, sizeof(Func)), REMOTE_ERR);
-    }
+    success(write_(fd, &f, sizeof(Func)), REMOTE_ERR);
     return 0;
 }
 
 template <typename ... Args>
 int Remote::callRemote(Func f, std::list<size_t> size, Args ... args) {
-    synchronized(this) {
-	std::cout << "making call " << f << "..\n";
-	success(write_(fd, &f, sizeof(Func)), REMOTE_ERR);
-	return sendArgs(size, args...);
-    }
+    std::cout << "making call " << f << "..\n";
+    success(write_(fd, &f, sizeof(Func)), REMOTE_ERR);
+    return sendArgs(size, args...);
     return 0;
 }
 	
@@ -57,14 +53,30 @@ T* receiveArg(int fd) {
     return arg;
 }
 
-lt::file::iovec_t* receiveVec(int fd) {
-    size_t sz;
-    successE(read_(fd, &sz, sizeof(size_t)));
-    lt::file::iovec_t *v = new lt::file::iovec_t;
-    v->iov_base = malloc(sz);
-    successE(read_(fd, v->iov_base, sz));
-    v->iov_len = sz;
-    return v;
+void Remote::sendVec(lt::file::iovec_t const *bufs, int num_bufs) {
+    for (int i = 0; i < num_bufs; i++) {
+	successE(write_(fd, &(bufs[i].iov_len), sizeof(size_t)));
+	successE(write_(fd, bufs[i].iov_base, bufs[i].iov_len));
+    }		
+}
+
+lt::file::iovec_t* receiveVec(int fd, int num_bufs) {
+    lt::file::iovec_t *bufs = new lt::file::iovec_t[num_bufs];
+    for (int i = 0; i < num_bufs; i++) {
+	size_t sz;
+	successE(read_(fd, &sz, sizeof(size_t)));
+	bufs[i].iov_base = malloc(sz);
+	successE(read_(fd, bufs[i].iov_base, sz));
+	bufs[i].iov_len = sz;
+    }
+    return bufs;
+}
+
+void delVec(lt::file::iovec_t* bufs, int num_bufs) {
+    for (int i = 0; i < num_bufs; i++) {
+	free(bufs[i].iov_base);
+    }
+    delete[] bufs;
 }
 
 // callN takes function name and its argument types, then fetches arguments and calls the function
@@ -99,20 +111,25 @@ int Remote::listenStorage(lt::default_storage &def) {
 	break; }
     case writev_file: {
 	lt::storage_error err;
-	lt::file::iovec_t *v = receiveVec(fd);
-	get(int, slot);
-	get(int, offset);
 	get(int, num_bufs);
+	get(int, piece);
+	get(int, offset);
 	get(int, flags);
-	std::cout << v->iov_base << "\n" << *slot << ", " << *offset << ", " << *num_bufs << ", " << *flags << "\n";
-	def.writev(v, *slot, *offset, *num_bufs, *flags, err);
-	free(v->iov_base);
-	delete v;
-	delete slot;
+	lt::file::iovec_t *bufs;
+	try {
+	    bufs = receiveVec(fd, *num_bufs);
+	} catch (std::exception e) {
+	    std::cout << "bufs exception\n";
+	    _exit(1);
+	}
+	//	do {
+	std::cout << "piece #" << *piece << ": " << def.writev(bufs, *num_bufs, *piece, *offset, *flags, err) << " bytes are written\n";
+	    //} while (err.operation != lt::storage_error::file_operation_t::none);
+	delVec(bufs, *num_bufs);
+	delete piece;
 	delete offset;
 	delete num_bufs;
 	delete flags;
-	std::cout << "received slot #" << *slot << "\n";
 	result;
 	break; }
     case write_resume: {
@@ -124,4 +141,4 @@ int Remote::listenStorage(lt::default_storage &def) {
 }
 
 template int Remote::callRemote(Func, std::list<size_t>, int*, const char*);
-template int Remote::callRemote(Func, std::list<size_t>, void*, int*, int*, int*, int*);
+template int Remote::callRemote(Func, std::list<size_t>, int*, int*, int*, int*);

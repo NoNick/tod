@@ -3,7 +3,6 @@
 #include <stdarg.h>
 #include <functional>
 #include <libtorrent/storage.hpp>
-#include "synchronize.h"
 
 #define lt libtorrent
 
@@ -13,11 +12,12 @@ enum Func {
     rename_file, release_files, delete_files, initialize,
     writev_file, write_resume};
 
-class Remote : protected Mutex {
+class Remote {
 public:
     Remote(int fd);
     ~Remote();
     int callRemote(Func f);
+    void sendVec(lt::file::iovec_t const *bufs, int num_bufs);
     template <typename ... Args>
 	int callRemote(Func f, std::list<size_t> size, Args ... args);
     int listenStorage(lt::default_storage &ds);

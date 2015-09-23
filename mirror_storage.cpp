@@ -31,15 +31,20 @@ void MirrorStorage::initialize(lt::storage_error& err) {
     return ds::initialize(err);
 }
 
-int MirrorStorage::writev(lt::file::iovec_t const* buf, int slot, int offset, int num_bufs, int flags, lt::storage_error& err) {
-    std::list<size_t> sizes;
-    sizes.pb(buf->iov_len);
-    sizes.pb(sizeof(int));
-    sizes.pb(sizeof(int));
-    sizes.pb(sizeof(int));
-    sizes.pb(sizeof(int));
-    r.callRemote<void*, int*, int*, int*, int*>(Func::writev_file, sizes, buf->iov_base, &slot, &offset, &num_bufs, &flags);
-    return ds::writev(buf, slot, offset, num_bufs, flags, err);
+int MirrorStorage::writev(lt::file::iovec_t const* buf, int num_bufs, int piece, int offset, int flags, lt::storage_error& err) {
+    synchronized(this) {
+	std::list<size_t> sizes;
+	sizes.pb(sizeof(int));
+	sizes.pb(sizeof(int));
+	sizes.pb(sizeof(int));
+	sizes.pb(sizeof(int));
+	r.callRemote(Func::writev_file, sizes, &num_bufs, &piece, &offset, &flags);
+	r.sendVec(buf, num_bufs);
+	int c = ds::writev(buf, num_bufs, piece, offset, flags, err);
+	std::cout << err.operation_str() << "\n";
+	return c;
+    }
+    return -1;
 }
 
 void MirrorStorage::write_resume_data(lt::entry& rd, lt::storage_error& err) const {
