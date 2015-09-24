@@ -14,6 +14,10 @@ include_directories(${LIBTORRENT_INCLUDE_DIRS}
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -pedantic -g -std=c++11 -Wall -O0")
 
+set(UI_SRC ui/screen.cpp
+           ui/progress.cpp
+	   ui/label.cpp)
+
 add_executable(tod main.cpp
                    txt.cpp
                    server.h
@@ -25,13 +29,17 @@ add_executable(tod main.cpp
 		   remote_interface.h
 		   remote_interface.cpp
 		   mirror_storage.h
-		   mirror_storage.cpp)
+		   mirror_storage.cpp
+		   piece_watcher.cpp
+		   ${UI_SRC})
 
 add_executable(toc client.cpp
 		   remote_interface.h
 		   remote_interface.cpp
 		   helpers.h
-		   helpers.cpp)
+		   helpers.cpp
+		   piece_watcher.cpp
+		   ${UI_SRC})
 
 target_link_libraries(tod ${Boost_LIBRARIES} ${LIBTORRENT_LIBRARIES} ${OpenMP_LIBRARIES})
 target_link_libraries(toc ${Boost_LIBRARIES} ${LIBTORRENT_LIBRARIES} ${OpenMP_LIBRARIES})

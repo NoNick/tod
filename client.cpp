@@ -13,6 +13,9 @@
 #include <libtorrent/torrent_info.hpp>
 #include "helpers.h"
 #include "remote_interface.h"
+#include "ui/screen.h"
+#include "ui/label.h"
+#include "ui/progress.h"
 
 #define critical(X, Y) if ((X) == -1) {std::cerr << Y << "\n"; _exit(3);}
 
@@ -62,6 +65,14 @@ void sendFile(int sock, string file) {
     buf_free(buf);
 }
 
+void setSigaction() {
+    struct sigaction new_act, old_act;
+    new_act.sa_handler = handler;
+    new_act.sa_flags = 0;
+    sigemptyset(&new_act.sa_mask);
+    sigaction(SIGINT, &new_act, &old_act);
+}
+
 int main (int ac, char *av[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -93,12 +104,8 @@ int main (int ac, char *av[]) {
     critical(handshake(sock), SHAKE_ERR);
     sendFile(sock, file);
 
-    struct sigaction new_act, old_act;
-    new_act.sa_handler = handler;
-    new_act.sa_flags = 0;
-    sigemptyset(&new_act.sa_mask);
-    sigaction(SIGINT, &new_act, &old_act);
-    
+    setSigaction();
+
     Remote r(sock);
     lt::error_code ec;
     lt::torrent_info t(file, ec);
@@ -107,8 +114,18 @@ int main (int ac, char *av[]) {
     params.path = "";
     params.pool = new lt::file_pool();
     lt::default_storage ds(params);
-    while (!intrp) {
-	r.listenStorage(ds);
+
+    Screen screen;
+    screen.addWidget(new Label("Progress: "), 15);
+    ProgressWatcher *pw = new ProgressWatcher(t.files());
+    screen.addWidget(pw, 70);
+    Label *speed = new Label(" X KB/sec");
+    screen.addWidget(speed, 15);
+    screen.refresh();
+    
+    while (!pw->finished() && !intrp) {
+	r.listenStorage(ds, pw);
+	screen.refresh();
     }
     std::cout << "done\n";
     close(sock);

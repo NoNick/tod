@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <functional>
 #include <libtorrent/storage.hpp>
+#include "ui/progress.h"
 
 #define lt libtorrent
 
@@ -20,7 +21,7 @@ public:
     void sendVec(lt::file::iovec_t const *bufs, int num_bufs);
     template <typename ... Args>
 	int callRemote(Func f, std::list<size_t> size, Args ... args);
-    int listenStorage(lt::default_storage &ds);
+    int listenStorage(lt::default_storage &ds, ProgressWatcher *pw);
 private:
     template <typename T>
 	int sendArgs(std::list<size_t> size, T arg);

@@ -89,10 +89,10 @@ void delVec(lt::file::iovec_t* bufs, int num_bufs) {
 // returns 0 for success
 //         1 for network error
 //         2 for storage error
-int Remote::listenStorage(lt::default_storage &def) {
+int Remote::listenStorage(lt::default_storage &def, ProgressWatcher *pw) {
     Func f;
     read_(fd, &f, sizeof(Func));
-    std::cout << f << "\n";
+    //std::cout << f << "\n";
 
     switch(f) {
     case rename_file: {
@@ -105,9 +105,9 @@ int Remote::listenStorage(lt::default_storage &def) {
 	call0(def.delete_files);
 	break; }
     case initialize: {
-	std::cout << "initializing...\n";
+	//std::cout << "initializing...\n";
 	call0(def.initialize);
-	result;
+	//result;
 	break; }
     case writev_file: {
 	lt::storage_error err;
@@ -123,14 +123,16 @@ int Remote::listenStorage(lt::default_storage &def) {
 	    _exit(1);
 	}
 	//	do {
-	std::cout << "piece #" << *piece << ": " << def.writev(bufs, *num_bufs, *piece, *offset, *flags, err) << " bytes are written\n";
+	def.writev(bufs, *num_bufs, *piece, *offset, *flags, err);
+	//std::cout << "piece #" << *piece << ": " << def.writev(bufs, *num_bufs, *piece, *offset, *flags, err) << " bytes are written\n";
 	    //} while (err.operation != lt::storage_error::file_operation_t::none);
+	pw->setPresent(bufs, *num_bufs, *piece, *offset);
 	delVec(bufs, *num_bufs);
 	delete piece;
 	delete offset;
 	delete num_bufs;
 	delete flags;
-	result;
+	//result;
 	break; }
     case write_resume: {
 	call1(def.write_resume_data, lt::entry);
