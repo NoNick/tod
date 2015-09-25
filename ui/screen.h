@@ -15,8 +15,10 @@ public:
     void addWidget(Widget *widget, unsigned width);
     // adds line break, i.e. new widgets will be placed at a new line
     void lineBreak();
+    // returns (width, height) of screen
+    std::pair<unsigned, unsigned> getSize();
 private:
-    unsigned width;
+    unsigned width, height;
     std::vector < std::vector < std::pair <Widget*, unsigned> > > layout;
     bool first; // shoudn't do left and up at first refresh
 };

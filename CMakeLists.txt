@@ -16,7 +16,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -pedantic -g -std=c+
 
 set(UI_SRC ui/screen.cpp
            ui/progress.cpp
-	   ui/label.cpp)
+	   ui/label.cpp
+	   ui/text_area.cpp)
 
 add_executable(tod main.cpp
                    txt.cpp

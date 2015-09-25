@@ -48,7 +48,7 @@ lt::storage_interface* mirrorConstructor(lt::storage_params const& params) {
 void Obtainer::run() {
     critical(handshake(sock), SHAKE_ERR);
     boost::shared_ptr<lt::torrent_info> t = getTorrent();
-    printInfo(t);
+    //    printInfo(t);
 
     lt::settings_pack sett;
     sett.set_str(lt::settings_pack::listen_interfaces, "0.0.0.0:6881");

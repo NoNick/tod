@@ -19,8 +19,8 @@ struct PieceInfo {
     // returns number of blocks which weren't present
     unsigned setPresent(unsigned start, unsigned len);
 
-    // assume piece has 16 KB blocks (in case of 32 KB blocks let's mark two blocks instead of one)
-    static const unsigned BLOCK_SIZE = 16 * 1024;
+    // assume piece has 8 KB blocks (in case of 16 KB blocks let's mark two blocks instead of one)
+    static const unsigned BLOCK_SIZE = 8 * 1024;
 };
 
 class PieceWatcher {

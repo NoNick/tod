@@ -6,11 +6,12 @@
 #include "screen.h"
 
 Screen::Screen() : first(true) {
-    struct winsize w;
+    winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    //    width = w.ws_col;
-    width = 60;
+    width = w.ws_col;
+    height = w.ws_row;
     layout.push_back(std::vector <std::pair <Widget*, unsigned> > ());
+    std::cout << "\033c";
 }
 
 Screen::~Screen() {
@@ -32,7 +33,9 @@ void Screen::refresh() {
 	for (auto it2 = (*it1).begin(); it2 != (*it1).end(); it2++) {
 	    (*it2).first->draw((*it2).second * width / 100);
 	}
-	std::cout << "\n";
+	if (it1 + 1 != layout.end()) {
+	    std::cout << "\n";
+	}
     }
 }
 
@@ -42,4 +45,8 @@ void Screen::addWidget(Widget *widget, unsigned width) {
 
 void Screen::lineBreak() {
     layout.push_back(std::vector <std::pair <Widget*, unsigned> > ());
+}
+
+std::pair <unsigned, unsigned> Screen::getSize() {
+    return std::make_pair(width, height);
 }

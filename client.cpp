@@ -116,13 +116,18 @@ int main (int ac, char *av[]) {
     lt::default_storage ds(params);
 
     Screen screen;
+    std::pair <unsigned, unsigned> sz = screen.getSize();
+    TextArea *msg = new TextArea(sz.first, sz.second - 1);
+    screen.addWidget(msg, 100);
+    screen.lineBreak();
     screen.addWidget(new Label("Progress: "), 15);
     ProgressWatcher *pw = new ProgressWatcher(t.files());
     screen.addWidget(pw, 70);
     Label *speed = new Label(" X KB/sec");
     screen.addWidget(speed, 15);
+
+    printInfo(t, msg);
     screen.refresh();
-    
     while (!pw->finished() && !intrp) {
 	r.listenStorage(ds, pw);
 	screen.refresh();
