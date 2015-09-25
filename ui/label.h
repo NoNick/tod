@@ -7,7 +7,7 @@
 // if width doesn't match string length
 class Label : public Widget {
 public:
-    Label(std::string str) : text(str) {};
+    Label(Screen *s, std::string str) : Widget(s), text(str) {};
     void draw(unsigned width);
     void setText(std::string str);
 private:

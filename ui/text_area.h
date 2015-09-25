@@ -6,7 +6,7 @@
 // displays last n written lines, no history
 class TextArea : public Widget {
 public:
-    TextArea(unsigned width, unsigned height);
+    TextArea(Screen *s, unsigned width, unsigned height) : Widget(s), width(width), height(height) {};
     void draw(unsigned width);
     void putLn(std::string line);
 private:

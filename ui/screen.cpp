@@ -4,6 +4,7 @@
 #include <iostream>
 #include <errno.h>
 #include "screen.h"
+#include "widget.h"
 
 Screen::Screen() : first(true) {
     winsize w;
@@ -23,6 +24,10 @@ Screen::~Screen() {
 }
 
 void Screen::refresh() {
+    if (!visible) {
+	return;
+    }
+    
     if (!first) {
 	std::cout << '\r';
 	std::cout << "\033[" << layout.size() << "A";
@@ -49,4 +54,11 @@ void Screen::lineBreak() {
 
 std::pair <unsigned, unsigned> Screen::getSize() {
     return std::make_pair(width, height);
+}
+
+void Screen::setVisible(bool v) {
+    if (!visible && v) {
+	refresh();
+    }
+    visible = v;
 }

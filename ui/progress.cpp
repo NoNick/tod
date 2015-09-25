@@ -15,6 +15,7 @@ void ProgressBar::draw(unsigned width) {
 
 void ProgressBar::setProgress(unsigned value) {
     progress = value;
+    screen->refresh();
 }
 
 void ProgressWatcher::setPresent(lt::file::iovec_t const *buf, int num_bufs, int piece, int offset) {
