@@ -1,9 +1,8 @@
 #pragma once
 #include <libtorrent/file.hpp>
 #include "widget.h"
+#include "label.h"
 #include "../piece_watcher.h"
-
-namespace lt = libtorrent;
 
 // draws progress bar, progress varies from 0 to 100
 class ProgressBar : public Widget {
@@ -15,8 +14,13 @@ private:
     unsigned progress;
 };
 
-class ProgressWatcher : public ProgressBar, public PieceWatcher {
+// watch pieces and display progress
+class ProgressWatcher : public PieceWatcher {
 public:
-    ProgressWatcher(Screen *s, const lt::file_storage &fs) : ProgressBar(s), PieceWatcher(fs) {};
+    ProgressWatcher(const lt::file_storage &fs, ProgressBar *pb, Label *l) : PieceWatcher(fs), bar(pb), info(l) {};
+    void setInfoLabel(Label *l);
     void setPresent(lt::file::iovec_t const *buf, int num_bufs, int piece, int offset);
+private:
+    ProgressBar *bar;
+    Label *info;    
 };

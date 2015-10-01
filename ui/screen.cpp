@@ -42,6 +42,7 @@ void Screen::refresh() {
 	    std::cout << "\n";
 	}
     }
+    std::cout.flush();
 }
 
 void Screen::addWidget(Widget *widget, unsigned width) {

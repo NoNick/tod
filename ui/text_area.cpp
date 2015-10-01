@@ -5,7 +5,7 @@
 
 void TextArea::putLn(std::string str) {
     for (unsigned i = 0; i < ceilInt(str.length(), width); i++) {
-	text.push_back(str.substr(i * width, (i + 1) * width));
+	text.push_back(str.substr(i * width, width));
 	if (text.size() > height) {
 	    text.pop_front();
 	}

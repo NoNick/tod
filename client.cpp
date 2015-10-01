@@ -117,16 +117,21 @@ int main (int ac, char *av[]) {
 
     Screen screen;
     std::pair <unsigned, unsigned> sz = screen.getSize();
-    TextArea *msg = new TextArea(&screen, sz.first, sz.second - 1);
+    TextArea *msg = new TextArea(&screen, sz.first, sz.second - 3);
     screen.addWidget(msg, 100);
     screen.lineBreak();
-    screen.addWidget(new Label(&screen, "Progress: "), 15);
-    ProgressWatcher *pw = new ProgressWatcher(&screen, t.files());
-    screen.addWidget(pw, 70);
-    Label *speed = new Label(&screen, " X KB/sec");
-    screen.addWidget(speed, 15);
+    screen.addWidget(new Label(&screen,
+			     "Name: " + std::string(t.name())), 100);
+    screen.lineBreak();
+    ProgressBar *pb = new ProgressBar(&screen);
+    Label *info = new Label(&screen, "");
+    ProgressWatcher *pw = new ProgressWatcher(t.files(), pb, info);
+    screen.addWidget(pb, 100);
+    screen.lineBreak();
+    screen.addWidget(info, 100);
     printInfo(t, msg);
     screen.setVisible(true);
+    screen.refresh();
 
     while (!pw->finished() && !intrp) {
 	r.listenStorage(ds, pw);

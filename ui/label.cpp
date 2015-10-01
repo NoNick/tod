@@ -13,4 +13,5 @@ void Label::draw(unsigned width) {
 
 void Label::setText(std::string str) {
     text = str;
+    screen->refresh();
 }

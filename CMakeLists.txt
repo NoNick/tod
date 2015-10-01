@@ -21,11 +21,8 @@ set(UI_SRC ui/screen.cpp
 
 add_executable(tod main.cpp
                    txt.cpp
-                   server.h
                    server.cpp
-		   obtainer.h
 		   obtainer.cpp
-		   helpers.h
 		   helpers.cpp
 		   remote_interface.h
 		   remote_interface.cpp
@@ -37,7 +34,6 @@ add_executable(tod main.cpp
 add_executable(toc client.cpp
 		   remote_interface.h
 		   remote_interface.cpp
-		   helpers.h
 		   helpers.cpp
 		   piece_watcher.cpp
 		   ${UI_SRC})
