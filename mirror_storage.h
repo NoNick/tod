@@ -1,3 +1,5 @@
+#include <tbb/concurrent_queue.h>
+#include <thread>
 #include <libtorrent/storage.hpp>
 #include <libtorrent/storage_defs.hpp>
 #include "remote_interface.h"
@@ -6,20 +8,22 @@
 #define lt libtorrent
 
 // works as default_storage, but forwards mathods calls to given fd
+// server part of remote interface
 class MirrorStorage : public lt::default_storage, protected Mutex {
 public:
     MirrorStorage(lt::storage_params const& params, int fd);
+    virtual ~MirrorStorage();
 
-    // hidden
-    ~MirrorStorage();
-
-    void rename_file(int index, std::string const& new_filename, lt::storage_error& err);
-    void release_files(lt::storage_error& err);
-    void delete_files(lt::storage_error& err);
     void initialize(lt::storage_error& err);
-    int writev(lt::file::iovec_t const* buf, int slot, int offset, int num_bufs, int flags, lt::storage_error& err);
-    void write_resume_data(lt::entry& rd, lt::storage_error& err) const;
-
+    int writev(lt::file::iovec_t const*, int, int, int, int, lt::storage_error& err);
+    void work();
+    
 private:
-    Remote r;
+    std::thread *worker;
+    tbb::concurrent_bounded_queue<WriteRequest> queue;
+    int fd;
+    void write(lt::file::iovec_t const *bufs, int num_bufs, int piece, int offset, int flags);
+    void send(WriteRequest req);
+    void sendBufs(lt::file::iovec_t const *bufs, int num_bufs);
+
 };

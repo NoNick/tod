@@ -5,13 +5,20 @@
 #include <boost/format.hpp>
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/bencode.hpp>
+#include <libtorrent/file.hpp>
 #include "helpers.h"
 #include "ui/text_area.h"
 
 #define critical(X, Y) if ((X) == -1) {std::cerr << Y << "\n"; _exit(3);}
 #define putLn_(X, Y) out->putLn((boost::format(X) % Y).str())
 
-namespace lt = libtorrent;
+unsigned getSize(lt::file::iovec_t const *buf, int num_bufs) {
+    unsigned result = 0;
+    for (int i = 0; i < num_bufs; i++) {
+	result += buf[i].iov_len;
+    }
+    return result;
+}
 
 int read_(int fd, void *buf, size_t count) {
     int n;
@@ -88,15 +95,15 @@ ssize_t buf_flush(int fd, buf_t *buf, size_t required) {
     return n;
 }
 
-void printInfo(lt::torrent_info &t, TextArea *out) {
-    putLn_("number of pieces: %d", t.num_pieces());
-    putLn_("piece length: %d", t.piece_length());
-    putLn_("comment: %s", t.comment());
-    putLn_("created by: %s", t.creator());
-    putLn_("name: %s", t.name());
-    putLn_("number of files: %d", t.num_files());
+void printInfo(boost::shared_ptr<lt::torrent_info> &t, TextArea *out) {
+    putLn_("number of pieces: %d", t->num_pieces());
+    putLn_("piece length: %d", t->piece_length());
+    putLn_("comment: %s", t->comment());
+    putLn_("created by: %s", t->creator());
+    putLn_("name: %s", t->name());
+    putLn_("number of files: %d", t->num_files());
     out->putLn("files:");    
-    lt::file_storage const& st = t.files();
+    lt::file_storage const& st = t->files();
     for (int i = 0; i < st.num_files(); ++i) {
 	int first = st.map_file(i, 0, 0).piece;
 	int last = st.map_file(i, std::max(st.file_size(i)-1, (int64_t)0), 0).piece;

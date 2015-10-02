@@ -5,13 +5,16 @@
 #include <libtorrent/torrent_info.hpp>
 #include "ui/text_area.h"
 
+#define lt libtorrent
+
 const char * const SHAKE_ERR = "Hasndshake failed";
 const char * const shakeMsg = "Remote hi five!";
 
+unsigned getSize(lt::file::iovec_t const *buf, int num_bufs);
 int read_(int fd, void *buf, size_t count);
 int write_(int fd, const void *buf, size_t count);
 bool handshake(int sock);
-void printInfo(libtorrent::torrent_info &t, TextArea *out);
+void printInfo(boost::shared_ptr<libtorrent::torrent_info> &t, TextArea *out);
 
 struct buf_t {
     size_t capacity, size;

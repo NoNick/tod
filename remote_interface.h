@@ -2,6 +2,7 @@
 // be careful with big/little-endian encodings!
 #include <stdarg.h>
 #include <functional>
+#include <tbb/concurrent_queue.h>
 #include <libtorrent/storage.hpp>
 #include "ui/progress.h"
 
@@ -9,24 +10,26 @@
 
 const char * const REMOTE_ERR = "Connection problem, aborting query.";
 
-enum Func {
-    rename_file, release_files, delete_files, initialize,
-    writev_file, write_resume};
+enum Query {
+    writeBuf, initialize
+};
+
+struct WriteRequest {
+    // last block can be different from 16KB size
+    int num_bufs, piece, offset, flags, last;
+
+    WriteRequest(int n, int p, int o, int f, int l) :
+      num_bufs(n), piece(p), offset(o), flags(f), last(l) {};
+    WriteRequest() {};
+};
 
 class Remote {
 public:
     Remote(int fd);
     ~Remote();
-    int callRemote(Func f);
-    void sendVec(lt::file::iovec_t const *bufs, int num_bufs);
-    template <typename ... Args>
-	int callRemote(Func f, std::list<size_t> size, Args ... args);
+    void initialize();
     int listenStorage(lt::default_storage &ds, ProgressWatcher *pw);
 private:
-    template <typename T>
-	int sendArgs(std::list<size_t> size, T arg);
-    template <typename T, typename ... Args>
-	int sendArgs(std::list<size_t> size, T arg, Args ... args);
     int fd;
     // TODO: queue here
 };

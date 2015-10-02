@@ -4,10 +4,10 @@
 #include <libtorrent/file_storage.hpp>
 #include "ui/text_area.h"
 
-namespace lt = libtorrent;
-namespace bc = boost::chrono;
-
+#define lt libtorrent
+#define bc boost::chrono
 #define NOW bc::time_point_cast<mcs>(bc::steady_clock::now())
+
 typedef bc::duration<unsigned long, boost::micro> mcs;
 typedef bc::time_point<bc::steady_clock, mcs> moment;
 
@@ -69,9 +69,9 @@ private:
     //unsigned long W, rest;
     //moment t0, t;
     // weighted average speed, bytes per sec
-    unsigned speed, cnt;
+    unsigned speed = 0, cnt;
     void updateSpeed(unsigned bytes);
     bool invalidTime;
     moment t0, t;
-    unsigned long B;
+    unsigned long B = 0;
 };

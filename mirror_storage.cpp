@@ -1,52 +1,70 @@
+#include <libtorrent/error_code.hpp>
+#include "piece_watcher.h"
 #include "mirror_storage.h"
+#include "helpers.h"
 
 #define ds lt::default_storage
 #define pb push_back
+#define success(X, Y) if ((X) == -1) { \
+                          std::cerr << Y << "\n";}
 
 MirrorStorage::MirrorStorage(lt::storage_params const& params, int fd) :
-    default_storage(params), r(fd){}
-
-MirrorStorage::~MirrorStorage() {}
-
-void MirrorStorage::rename_file(int index, std::string const& new_filename, lt::storage_error& err) {
-    std::list<size_t> sizes;
-    sizes.pb(sizeof(int));
-    sizes.pb(new_filename.size());
-    r.callRemote<int*, const char*>(Func::rename_file, (std::list<size_t>)sizes, &index, new_filename.c_str());
-    return ds::rename_file(index, new_filename, err);
+    default_storage(params), fd(fd) {
+    worker = new std::thread(&MirrorStorage::work, this);
 }
 
-void MirrorStorage::release_files(lt::storage_error& err) {
-    r.callRemote(Func::release_files);
-    return ds::release_files(err);
-}
-
-void MirrorStorage::delete_files(lt::storage_error& err) {
-    r.callRemote(Func::delete_files);
-    return ds::delete_files(err);
+MirrorStorage::~MirrorStorage() {
+    delete worker;
 }
 
 void MirrorStorage::initialize(lt::storage_error& err) {
-    r.callRemote(Func::initialize);
+    Query q = Query::initialize;
+    success(write_(fd, &q, sizeof(Query)), REMOTE_ERR);
     return ds::initialize(err);
 }
 
 int MirrorStorage::writev(lt::file::iovec_t const* buf, int num_bufs, int piece, int offset, int flags, lt::storage_error& err) {
-    synchronized(this) {
-	std::list<size_t> sizes;
-	sizes.pb(sizeof(int));
-	sizes.pb(sizeof(int));
-	sizes.pb(sizeof(int));
-	sizes.pb(sizeof(int));
-	r.callRemote(Func::writev_file, sizes, &num_bufs, &piece, &offset, &flags);
-	r.sendVec(buf, num_bufs);
-	int c = ds::writev(buf, num_bufs, piece, offset, flags, err);
-	std::cout << err.operation_str() << "\n";
-	return c;
+    int code = ds::writev(buf, num_bufs, piece, offset, flags, err);
+    if (err.ec == 0) {
+	queue.push(WriteRequest(num_bufs, piece, offset, flags, buf[num_bufs - 1].iov_len));
     }
-    return -1;
+    return code;
 }
 
-void MirrorStorage::write_resume_data(lt::entry& rd, lt::storage_error& err) const {
-    return ds::write_resume_data(rd, err);
+void MirrorStorage::sendBufs(lt::file::iovec_t const *bufs, int num_bufs) {
+    for (int i = 0; i < num_bufs; i++) {
+	success(write_(fd, &(bufs[i].iov_len), sizeof(size_t)), REMOTE_ERR);
+	success(write_(fd, bufs[i].iov_base, bufs[i].iov_len), REMOTE_ERR);
+    }		
+}
+
+void MirrorStorage::send(WriteRequest req) {
+    lt::file::iovec_t *bufs = new lt::file::iovec_t[req.num_bufs];
+    for (int i = 0; i < req.num_bufs - 1; i++) {
+	bufs[i].iov_len = PieceInfo::BLOCK_SIZE;
+	bufs[i].iov_base = malloc(PieceInfo::BLOCK_SIZE);
+    }
+    bufs[req.num_bufs - 1].iov_len = req.last;
+    bufs[req.num_bufs - 1].iov_base = malloc(req.last);
+    
+    lt::storage_error err;
+    ds::readv(bufs, req.num_bufs, req.piece, req.offset, req.flags, err);
+    if (err.ec == 0) {
+	Query q = Query::writeBuf;
+	success(write_(fd, &q, sizeof(Query)), REMOTE_ERR);
+	success(write_(fd, &req, sizeof(WriteRequest)), REMOTE_ERR);
+	sendBufs(bufs, req.num_bufs);
+    }
+    for (int i = 0; i < req.num_bufs; i++) {
+	free(bufs[i].iov_base);
+    }
+    delete[] bufs;
+}
+
+void MirrorStorage::work() {
+    WriteRequest req;
+    while (true) {
+	queue.pop(req);
+	send(req);
+    }
 }

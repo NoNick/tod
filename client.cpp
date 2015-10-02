@@ -108,9 +108,9 @@ int main (int ac, char *av[]) {
 
     Remote r(sock);
     lt::error_code ec;
-    lt::torrent_info t(file, ec);
+    boost::shared_ptr<lt::torrent_info> t(new lt::torrent_info(file, ec));
     lt::storage_params params;
-    params.files = &(t.files());
+    params.files = &(t->files());
     params.path = "";
     params.pool = new lt::file_pool();
     lt::default_storage ds(params);
@@ -121,11 +121,11 @@ int main (int ac, char *av[]) {
     screen.addWidget(msg, 100);
     screen.lineBreak();
     screen.addWidget(new Label(&screen,
-			     "Name: " + std::string(t.name())), 100);
+			     "Name: " + std::string(t->name())), 100);
     screen.lineBreak();
     ProgressBar *pb = new ProgressBar(&screen);
     Label *info = new Label(&screen, "");
-    ProgressWatcher *pw = new ProgressWatcher(t.files(), pb, info);
+    ProgressWatcher *pw = new ProgressWatcher(t->files(), pb, info);
     screen.addWidget(pb, 100);
     screen.lineBreak();
     screen.addWidget(info, 100);

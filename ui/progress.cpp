@@ -49,8 +49,11 @@ void ProgressWatcher::setPresent(lt::file::iovec_t const *buf, int num_bufs, int
     PieceWatcher::setPresent(buf, num_bufs, piece, offset);
     unsigned p = getProgress();
     bar->setProgress(p);
-    //unsigned s = getSpeed();
-    info->setText(bpsToString(getSpeed()) + " EST: " +
+    unsigned s = getSpeed();
+    if (s == 0) {
+	return;
+    }
+    info->setText(bpsToString(s) + " EST: " +
 		  secToString(getEstimated()) + " " + STR(p) + "% done");
 }
 

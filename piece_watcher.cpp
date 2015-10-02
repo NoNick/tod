@@ -1,4 +1,5 @@
 #include "piece_watcher.h"
+#include "helpers.h"
 #include "txt.cpp"
 
 #define ceilInt(x, y) (x % y ? x / y + 1 : x / y)
@@ -43,14 +44,6 @@ PieceWatcher::PieceWatcher(const lt::file_storage &fs) {
 
 PieceWatcher::~PieceWatcher() {
     //    delete p;
-}
-
-unsigned getSize(lt::file::iovec_t const *buf, int num_bufs) {
-    unsigned result = 0;
-    for (int i = 0; i < num_bufs; i++) {
-	result += buf[i].iov_len;
-    }
-    return result;
 }
 
 void PieceWatcher::setPresent(lt::file::iovec_t const *buf, int num_bufs, int piece, int offset) {
