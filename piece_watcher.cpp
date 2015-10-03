@@ -43,7 +43,7 @@ PieceWatcher::PieceWatcher(const lt::file_storage &fs) {
 }
 
 PieceWatcher::~PieceWatcher() {
-    //    delete p;
+    delete[] p;
 }
 
 void PieceWatcher::setPresent(lt::file::iovec_t const *buf, int num_bufs, int piece, int offset) {

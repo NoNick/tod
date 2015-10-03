@@ -1,5 +1,3 @@
-// handmade rmi for mirrorStorage
-// be careful with big/little-endian encodings!
 #include <stdarg.h>
 #include <functional>
 #include <tbb/concurrent_queue.h>

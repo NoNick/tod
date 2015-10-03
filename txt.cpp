@@ -1,13 +1,14 @@
 #include <exception>
+#include <string>
 
 class TxtException : std::exception {    
 public:    
-    TxtException(char *m) : msg(m) {};
+    TxtException(std::string m) : msg(m) {};
 
     virtual const char* what () const throw() {
-	return msg;
+	return msg.c_str();
     }
 
 private:
-    char *msg;    
+    std::string msg;
 };

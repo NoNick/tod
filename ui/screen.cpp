@@ -1,13 +1,15 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include <iostream>
 #include <errno.h>
 #include "screen.h"
 #include "widget.h"
 
-Screen::Screen() : first(true) {
+Screen::Screen() : first(true), visible(false) {
     winsize w;
+    memset(&w, 0, sizeof(w)); // valgrind error fix
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
     width = w.ws_col;
     height = w.ws_row;

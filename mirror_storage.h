@@ -3,13 +3,12 @@
 #include <libtorrent/storage.hpp>
 #include <libtorrent/storage_defs.hpp>
 #include "remote_interface.h"
-#include "synchronize.h"
 
 #define lt libtorrent
 
 // works as default_storage, but forwards mathods calls to given fd
 // server part of remote interface
-class MirrorStorage : public lt::default_storage, protected Mutex {
+class MirrorStorage : public lt::default_storage {
 public:
     MirrorStorage(lt::storage_params const& params, int fd);
     virtual ~MirrorStorage();

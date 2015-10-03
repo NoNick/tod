@@ -12,7 +12,7 @@ public:
     void run();
 private:
     int sock;
-    const char *shakeMsg = "Remote hi five!";
+    const char *SHAKE_MSG = "Remote hi five!";
     // reads size sz and then downloads buffer of size sz
     boost::shared_ptr<libtorrent::torrent_info> getTorrent();
 

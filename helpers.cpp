@@ -47,12 +47,13 @@ int write_(int fd, const void *buf, size_t count) {
 }
 
 bool handshake(int sock) {
-    int n = strlen(shakeMsg);    
-    char *reply = new char[n];
+    int n = strlen(SHAKE_MSG);    
+    char *reply = (char*)malloc(sizeof(char) * (n + 1));
+    memset(reply, 0, sizeof(char) * (n + 1));
 
-    critical(write_(sock, shakeMsg, n), SHAKE_ERR);
+    critical(write_(sock, SHAKE_MSG, n), SHAKE_ERR);
     critical(read_(sock, reply, n), SHAKE_ERR);
-    bool res = !strcmp(reply, shakeMsg);
+    bool res = !strcmp(reply, SHAKE_MSG);
 
     free(reply);
     return res;

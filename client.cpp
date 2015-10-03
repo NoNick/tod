@@ -111,9 +111,9 @@ int main (int ac, char *av[]) {
     boost::shared_ptr<lt::torrent_info> t(new lt::torrent_info(file, ec));
     lt::storage_params params;
     params.files = &(t->files());
-    params.path = "";
+    params.path = ".";
     params.pool = new lt::file_pool();
-    lt::default_storage ds(params);
+    lt::default_storage *ds = new lt::default_storage(params);
 
     Screen screen;
     std::pair <unsigned, unsigned> sz = screen.getSize();
@@ -134,10 +134,14 @@ int main (int ac, char *av[]) {
     screen.refresh();
 
     while (!pw->finished() && !intrp) {
-	r.listenStorage(ds, pw);
+	r.listenStorage(*ds, pw);
     }
+    
     std::cout << "done\n";
     close(sock);
-
+    delete pw;
+    delete ds;
+    delete params.pool;
+    
     return 0;
 }

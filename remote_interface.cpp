@@ -4,7 +4,6 @@
 #include <errno.h>
 #include <libtorrent/storage.hpp>
 #include "helpers.h"
-#include "synchronize.h"
 #include "remote_interface.h"
 
 #define success(X, Y) if ((X) == -1) { \
@@ -18,8 +17,7 @@ Remote::~Remote() { close(fd); }
 
 lt::file::iovec_t* receiveVec(int fd, int num_bufs) {
     size_t size = sizeof(lt::file::iovec_t)*num_bufs;
-    lt::file::iovec_t *bufs = (lt::file::iovec_t*)
-	malloc(size);
+    lt::file::iovec_t *bufs = (lt::file::iovec_t*)malloc(size);
     for (int i = 0; i < num_bufs; i++) {
 	size_t sz = 0;
 	successE(read_(fd, &sz, sizeof(size_t)));
@@ -56,10 +54,6 @@ int Remote::listenStorage(lt::default_storage &def, ProgressWatcher *pw) {
 	lt::storage_error err;
 	WriteRequest req(0, 0, 0, 0, 0);
 	success(read_(fd, &req, sizeof(WriteRequest)), REMOTE_ERR);
-	if (req.num_bufs == 0) {
-	    std::cout << strerror(errno) << "\n";
-	    _exit(1);
-	}
 	lt::file::iovec_t *bufs;
 	try {
 	    bufs = receiveVec(fd, req.num_bufs);

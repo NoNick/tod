@@ -8,7 +8,7 @@
 #define lt libtorrent
 
 const char * const SHAKE_ERR = "Hasndshake failed";
-const char * const shakeMsg = "Remote hi five!";
+const char * const SHAKE_MSG = "Remote hi five!";
 
 unsigned getSize(lt::file::iovec_t const *buf, int num_bufs);
 int read_(int fd, void *buf, size_t count);
