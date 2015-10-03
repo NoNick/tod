@@ -11,8 +11,8 @@ Screen::Screen() : first(true), visible(false) {
     winsize w;
     memset(&w, 0, sizeof(w)); // valgrind error fix
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    width = w.ws_col;
-    height = w.ws_row;
+    width = 40;//w.ws_col;
+    height = 30;//w.ws_row;
     layout.push_back(std::vector <std::pair <Widget*, unsigned> > ());
     std::cout << "\033c";
 }

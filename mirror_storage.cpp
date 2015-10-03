@@ -39,13 +39,8 @@ void MirrorStorage::sendBufs(lt::file::iovec_t const *bufs, int num_bufs) {
 }
 
 void MirrorStorage::send(WriteRequest req) {
-    lt::file::iovec_t *bufs = new lt::file::iovec_t[req.num_bufs];
-    for (int i = 0; i < req.num_bufs - 1; i++) {
-	bufs[i].iov_len = PieceInfo::BLOCK_SIZE;
-	bufs[i].iov_base = malloc(PieceInfo::BLOCK_SIZE);
-    }
+    SwimmingIOV *bufs = new SwimmingIOV[req.num_bufs];
     bufs[req.num_bufs - 1].iov_len = req.last;
-    bufs[req.num_bufs - 1].iov_base = malloc(req.last);
     
     lt::storage_error err;
     ds::readv(bufs, req.num_bufs, req.piece, req.offset, req.flags, err);
@@ -54,9 +49,6 @@ void MirrorStorage::send(WriteRequest req) {
 	success(write_(fd, &q, sizeof(Query)), REMOTE_ERR);
 	success(write_(fd, &req, sizeof(WriteRequest)), REMOTE_ERR);
 	sendBufs(bufs, req.num_bufs);
-    }
-    for (int i = 0; i < req.num_bufs; i++) {
-	free(bufs[i].iov_base);
     }
     delete[] bufs;
 }

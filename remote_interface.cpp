@@ -5,6 +5,7 @@
 #include <libtorrent/storage.hpp>
 #include "helpers.h"
 #include "remote_interface.h"
+#include "swimming_iov.h"
 
 #define success(X, Y) if ((X) == -1) { \
                           std::cerr << Y << "\n"; \
@@ -15,24 +16,13 @@ Remote::Remote(int fd) : fd(fd) {}
 
 Remote::~Remote() { close(fd); }
 
-lt::file::iovec_t* receiveVec(int fd, int num_bufs) {
-    size_t size = sizeof(lt::file::iovec_t)*num_bufs;
-    lt::file::iovec_t *bufs = (lt::file::iovec_t*)malloc(size);
+void receiveVec(int fd, iov *bufs, int num_bufs) {
     for (int i = 0; i < num_bufs; i++) {
 	size_t sz = 0;
 	successE(read_(fd, &sz, sizeof(size_t)));
-	bufs[i].iov_base = malloc(sz);
 	successE(read_(fd, bufs[i].iov_base, sz));
 	bufs[i].iov_len = sz;
     }
-    return bufs;
-}
-
-void delVec(lt::file::iovec_t* bufs, int num_bufs) {
-    for (int i = 0; i < num_bufs; i++) {
-	free(bufs[i].iov_base);
-    }
-    free(bufs);
 }
 
 // returns 0 for success
@@ -54,9 +44,9 @@ int Remote::listenStorage(lt::default_storage &def, ProgressWatcher *pw) {
 	lt::storage_error err;
 	WriteRequest req(0, 0, 0, 0, 0);
 	success(read_(fd, &req, sizeof(WriteRequest)), REMOTE_ERR);
-	lt::file::iovec_t *bufs;
+	SwimmingIOV *bufs = new SwimmingIOV[req.num_bufs];
 	try {
-	    bufs = receiveVec(fd, req.num_bufs);
+	    receiveVec(fd, bufs, req.num_bufs);
 	} catch (std::exception e) {
 	    std::cout << "bufs exception\n";
 	    _exit(1);
@@ -66,8 +56,8 @@ int Remote::listenStorage(lt::default_storage &def, ProgressWatcher *pw) {
 	//std::cout << "piece #" << *piece << ": " << def.writev(bufs, *num_bufs, *piece, *offset, *flags, err) << " bytes are written\n";
 	    //} while (err.operation != lt::storage_error::file_operation_t::none);
 	pw->setPresent(bufs, req.num_bufs, req.piece, req.offset);
-	delVec(bufs, req.num_bufs);
 	//result;
+	delete[] bufs;
 	break; }
     }
 	  

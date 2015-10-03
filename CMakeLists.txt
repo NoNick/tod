@@ -27,12 +27,14 @@ add_executable(tod main.cpp
 		   remote_interface.cpp
 		   mirror_storage.cpp
 		   piece_watcher.cpp
+		   swimming_iov.cpp
 		   ${UI_SRC})
 
 add_executable(toc client.cpp
 		   remote_interface.cpp
 		   helpers.cpp
 		   piece_watcher.cpp
+		   swimming_iov.cpp
 		   ${UI_SRC})
 
 target_link_libraries(tod ${Boost_LIBRARIES} ${LIBTORRENT_LIBRARIES} ${TBB_LIBRARIES})
