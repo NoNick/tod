@@ -117,6 +117,8 @@ int main (int ac, char *av[]) {
 
     Screen screen;
     std::pair <unsigned, unsigned> sz = screen.getSize();
+    // TODO make msg available all over the code by
+    // TODO macroses like LOG(), DEBUG(), etc
     TextArea *msg = new TextArea(&screen, sz.first, sz.second - 3);
     screen.addWidget(msg, 100);
     screen.lineBreak();
@@ -133,7 +135,7 @@ int main (int ac, char *av[]) {
     screen.setVisible(true);
     screen.refresh();
 
-    pw->checkPresence();
+    pw->checkPresence(r);
     while (!pw->finished() && !intrp) {
 	r.listenStorage(*ds, pw);
     }

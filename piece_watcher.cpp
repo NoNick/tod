@@ -2,6 +2,7 @@
 #include <libtorrent/sha1_hash.hpp>
 #include <libtorrent/error_code.hpp>
 #include "piece_watcher.h"
+#include "remote_interface.h"
 #include "helpers.h"
 #include "swimming_iov.h"
 #include "txt.cpp"
@@ -73,10 +74,12 @@ PieceWatcher::~PieceWatcher() {
     delete[] p;
 }
 
-void PieceWatcher::checkPresence() {
+void PieceWatcher::checkPresence(Remote &r) {
     for (unsigned i = 0; i < pNum; i++) {
 	if (!p[i].finished && correctPiece(i)) {
 	    setPresent_(torrent->piece_size(i), i, 0);
+	} else {
+	    r.requestPiece(i);
 	}
     }
 }

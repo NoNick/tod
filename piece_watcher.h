@@ -12,6 +12,8 @@
 typedef bc::duration<unsigned long, boost::micro> mcs;
 typedef bc::time_point<bc::steady_clock, mcs> moment;
 
+class Remote;
+
 struct PieceInfo {
     // mask of downloaded (1) and not present (0) blocks
     std::vector <bool> present;
@@ -47,7 +49,8 @@ public:
     unsigned getEstimated();
     // iterates through unpresented pieces and set them presented
     // if storage contains this piece and it has correct hash
-    void checkPresence();
+    // for unpresent pieces send request for then to server
+    void checkPresence(Remote &r);
     bool finished();
 private:
     // returns true if hash of piece in storage is correct

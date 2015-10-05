@@ -1,4 +1,5 @@
 #include <libtorrent/error_code.hpp>
+#include <unistd.h>
 #include "piece_watcher.h"
 #include "mirror_storage.h"
 #include "helpers.h"
@@ -7,14 +8,17 @@
 #define pb push_back
 #define success(X, Y) if ((X) == -1) { \
                           std::cerr << Y << "\n";}
+#define ceilInt(x, y) (x % y ? x / y + 1 : x / y)
 
-MirrorStorage::MirrorStorage(lt::storage_params const& params, int fd) :
-    default_storage(params), fd(fd) {
-    worker = new std::thread(&MirrorStorage::work, this);
+MirrorStorage::MirrorStorage(lt::storage_params const& params, int fd,
+			     lt::torrent_handle *th, const lt::file_storage *fs) : default_storage(params), fd(fd) {
+    sendThread = new std::thread(&MirrorStorage::doSend, this);
+    receiveThread = new std::thread(&MirrorStorage::doCheck, this, th, fs);
 }
 
 MirrorStorage::~MirrorStorage() {
-    delete worker;
+    delete sendThread;
+    delete receiveThread;
 }
 
 void MirrorStorage::initialize(lt::storage_error& err) {
@@ -53,7 +57,30 @@ void MirrorStorage::send(WriteRequest req) {
     delete[] bufs;
 }
 
-void MirrorStorage::work() {
+void MirrorStorage::doCheck(lt::torrent_handle *th, const lt::file_storage *fs) {
+    // TODO: is there a better way?
+    lt::torrent_status::state_t st = th->status().state;
+    while (st == lt::torrent_status::state_t::queued_for_checking ||
+	   st == lt::torrent_status::state_t::checking_files ||
+	   st == lt::torrent_status::state_t::checking_resume_data) {
+	sleep(1);
+	st = th->status().state;
+    }
+    int piece;
+    while (true) {
+	success(read_(fd, &piece, sizeof(int)), REMOTE_ERR);
+	// schedule piece for remote write only if it's downloaded
+	// otherwise piece will be sent on write to storage
+	if (th->have_piece(piece)) {
+	    int last = fs->piece_size(piece) % PieceInfo::BLOCK_SIZE;
+	    WriteRequest req(ceilInt(fs->piece_size(piece), PieceInfo::BLOCK_SIZE),
+			     piece, 0, 0, last ? last : PieceInfo::BLOCK_SIZE);
+	    queue.push(req);
+	}
+    }
+}
+
+void MirrorStorage::doSend() {
     WriteRequest req;
     while (true) {
 	queue.pop(req);

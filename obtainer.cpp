@@ -40,9 +40,12 @@ boost::shared_ptr<lt::torrent_info> Obtainer::getTorrent() {
     return info;
 }
 
+// TODO
 int fd;
+const lt::file_storage *fs;
+lt::torrent_handle th;
 lt::storage_interface* mirrorConstructor(lt::storage_params const& params) {
-    return new MirrorStorage(params, fd);
+    return new MirrorStorage(params, fd, &th, fs);
 }
 
 void Obtainer::run() {
@@ -59,6 +62,7 @@ void Obtainer::run() {
 	return;
     }
     fd = sock;
+    fs = &t->files();
     lt::add_torrent_params p((lt::storage_constructor_type)mirrorConstructor);
     p.save_path = "./";
     p.ti = t;
@@ -66,12 +70,13 @@ void Obtainer::run() {
 	std::cerr << ec.message() << "\n";
 	return;
     }
-    s.add_torrent(p, ec);
+    th = s.add_torrent(p, ec);
     if (ec) {
 	std::cerr << ec.message() << "\n";
 	return;
     }
 
+    // TODO
     while (true)
-    pause();
+	pause();
 }

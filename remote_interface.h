@@ -1,3 +1,4 @@
+#pragma once
 #include <stdarg.h>
 #include <functional>
 #include <tbb/concurrent_queue.h>
@@ -23,16 +24,19 @@ struct WriteRequest {
     WriteRequest() {};
 };
 
+// client part for communication subsystem
 class Remote {
 public:
+    // uses fd descriptor for communication
     Remote(int fd);
     ~Remote();
-    void initialize();
+    // listens for incoming storage operations
+    // does them in ds, notifies pw
     int listenStorage(lt::default_storage &ds, ProgressWatcher *pw);
+    // send server request to schedule remote write of piece
+    // need for re-download of corrupted pieces and resume function
+    void requestPiece(int piece);
 private:
     int fd;
-    // TODO: queue here
 };
 
-// template issue, moving template functions in single translation unit
-//#include "remote_interface.cpp"

@@ -25,20 +25,21 @@ void receiveVec(int fd, iov *bufs, int num_bufs) {
     }
 }
 
+void Remote::requestPiece(int piece) {
+    write_(fd, &piece, sizeof(int));
+}
+
 // returns 0 for success
 //         1 for network error
 //         2 for storage error
 int Remote::listenStorage(lt::default_storage &def, ProgressWatcher *pw) {
     Query q = (Query)0;
-    read_(fd, &q, sizeof(Query));
-    //std::cout << f << "\n";
+    success(read_(fd, &q, sizeof(Query)), REMOTE_ERR);
 
     switch(q) {
     case Query::initialize: {
-	//std::cout << "initializing...\n";
 	lt::storage_error err;
 	def.initialize(err);
-	//result;
 	break; }
     case Query::writeBuf: {
 	lt::storage_error err;
@@ -48,15 +49,12 @@ int Remote::listenStorage(lt::default_storage &def, ProgressWatcher *pw) {
 	try {
 	    receiveVec(fd, bufs, req.num_bufs);
 	} catch (std::exception e) {
+	    delete[] bufs;
 	    std::cout << "bufs exception\n";
 	    _exit(1);
 	}
-	//	do {
 	def.writev(bufs, req.num_bufs, req.piece, req.offset, req.flags, err);
-	//std::cout << "piece #" << *piece << ": " << def.writev(bufs, *num_bufs, *piece, *offset, *flags, err) << " bytes are written\n";
-	    //} while (err.operation != lt::storage_error::file_operation_t::none);
 	pw->setPresent(bufs, req.num_bufs, req.piece, req.offset);
-	//result;
 	delete[] bufs;
 	break; }
     }

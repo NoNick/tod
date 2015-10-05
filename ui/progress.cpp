@@ -45,8 +45,8 @@ void ProgressBar::setProgress(unsigned value) {
     screen->refresh();
 }
 
-void ProgressWatcher::checkPresence() {
-    PieceWatcher::checkPresence();
+void ProgressWatcher::checkPresence(Remote &r) {
+    PieceWatcher::checkPresence(r);
     updateInfo();
 }
 
