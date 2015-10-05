@@ -125,7 +125,7 @@ int main (int ac, char *av[]) {
     screen.lineBreak();
     ProgressBar *pb = new ProgressBar(&screen);
     Label *info = new Label(&screen, "");
-    ProgressWatcher *pw = new ProgressWatcher(t->files(), pb, info);
+    ProgressWatcher *pw = new ProgressWatcher(&(*t), ds, pb, info);
     screen.addWidget(pb, 100);
     screen.lineBreak();
     screen.addWidget(info, 100);
@@ -133,6 +133,7 @@ int main (int ac, char *av[]) {
     screen.setVisible(true);
     screen.refresh();
 
+    pw->checkPresence();
     while (!pw->finished() && !intrp) {
 	r.listenStorage(*ds, pw);
     }

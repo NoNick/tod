@@ -45,8 +45,17 @@ void ProgressBar::setProgress(unsigned value) {
     screen->refresh();
 }
 
+void ProgressWatcher::checkPresence() {
+    PieceWatcher::checkPresence();
+    updateInfo();
+}
+
 void ProgressWatcher::setPresent(lt::file::iovec_t const *buf, int num_bufs, int piece, int offset) {
     PieceWatcher::setPresent(buf, num_bufs, piece, offset);
+    updateInfo();
+}
+
+void ProgressWatcher::updateInfo() {
     unsigned p = getProgress();
     bar->setProgress(p);
     unsigned s = getSpeed();

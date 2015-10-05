@@ -1,5 +1,9 @@
+#include <libtorrent/hasher.hpp>
+#include <libtorrent/sha1_hash.hpp>
+#include <libtorrent/error_code.hpp>
 #include "piece_watcher.h"
 #include "helpers.h"
+#include "swimming_iov.h"
 #include "txt.cpp"
 
 #define ceilInt(x, y) (x % y ? x / y + 1 : x / y)
@@ -24,12 +28,35 @@ unsigned PieceInfo::setPresent(unsigned start, unsigned len) {
     return cnt;
 }
 
-PieceWatcher::PieceWatcher(const lt::file_storage &fs) {
+bool PieceWatcher::correctPiece(int piece) {
+    lt::hasher hsr;
+    lt::storage_error err;
+    size_t len = torrent->piece_size(piece);
+    unsigned sz = ceilInt(len, PieceInfo::BLOCK_SIZE);
+    SwimmingIOV *iov = new SwimmingIOV[sz];
+    unsigned last = len % PieceInfo::BLOCK_SIZE;
+    iov[sz - 1].iov_len = last ? last : PieceInfo::BLOCK_SIZE;
+    st->readv(iov, sz, piece, 0, 0, err);
+    if (err.ec != 0) {
+	delete[] iov;
+	return false;
+    }
+    
+    for (SwimmingIOV *cur = iov; cur != (iov + sz); cur++) {
+	hsr.update((char*)cur->iov_base, (int)cur->iov_len);
+    }
+    delete[] iov;
+    return hsr.final() == torrent->hash_for_piece(piece);
+}   
+
+PieceWatcher::PieceWatcher(lt::torrent_info *t,
+			   lt::storage_interface *st) : torrent(t), st(st) {
     invalidTime = true;
     cnt = 0;
     B = 0;
     //rest = 0;
-    
+
+    lt::file_storage fs = torrent->files();
     pNum = pRemain = fs.num_pieces();
     len = fs.piece_length();
     int bLen = fs.piece_length() / PieceInfo::BLOCK_SIZE;
@@ -46,15 +73,28 @@ PieceWatcher::~PieceWatcher() {
     delete[] p;
 }
 
+void PieceWatcher::checkPresence() {
+    for (unsigned i = 0; i < pNum; i++) {
+	if (!p[i].finished && correctPiece(i)) {
+	    setPresent_(torrent->piece_size(i), i, 0);
+	}
+    }
+}
+
+bool PieceWatcher::setPresent_(unsigned sz, int piece, int offset) {
+    unsigned blocks = ceilInt(sz, PieceInfo::BLOCK_SIZE);
+    bRemain -= p[piece].setPresent(offset / PieceInfo::BLOCK_SIZE, blocks);
+    pRemain -= p[piece].finished;
+    return p[piece].finished;
+}
+	
 void PieceWatcher::setPresent(lt::file::iovec_t const *buf, int num_bufs, int piece, int offset) {
     if (offset % PieceInfo::BLOCK_SIZE) {
 	throw TxtException("Unaligned write\n");
     }
     unsigned sz = getSize(buf, num_bufs);
-    unsigned blocks = ceilInt(sz, PieceInfo::BLOCK_SIZE);
-    bRemain -= p[piece].setPresent(offset / PieceInfo::BLOCK_SIZE, blocks);
-    pRemain -= p[piece].finished;
-
+    // TODO: check hash of just finished piece
+    setPresent_(sz, piece, offset);
     updateSpeed(sz);
 }
 

@@ -1,7 +1,8 @@
 #pragma once
 #include <boost/chrono.hpp>
 #include <libtorrent/file.hpp>
-#include <libtorrent/file_storage.hpp>
+#include <libtorrent/torrent_info.hpp>
+#include <libtorrent/storage.hpp>
 #include "ui/text_area.h"
 
 #define lt libtorrent
@@ -35,7 +36,7 @@ struct PieceInfo {
 // maintain weighted average speed of download
 class PieceWatcher {
 public:
-    PieceWatcher(const lt::file_storage &fs);
+    PieceWatcher(lt::torrent_info *t, lt::storage_interface *st);
     virtual ~PieceWatcher();
     void setPresent(lt::file::iovec_t const *buf, int num_bufs, int piece, int offset);
     // percentage of present blocks
@@ -44,8 +45,16 @@ public:
     unsigned getSpeed();
     // time in seconds based on average speed
     unsigned getEstimated();
+    // iterates through unpresented pieces and set them presented
+    // if storage contains this piece and it has correct hash
+    void checkPresence();
     bool finished();
 private:
+    // returns true if hash of piece in storage is correct
+    bool correctPiece(int piece);
+    // true if piece is done
+    bool setPresent_(unsigned sz, int piece, int offset);
+    
     // piece length (except for the last one)
     unsigned len;
     // number of pieces/blocks
@@ -53,6 +62,8 @@ private:
     // number of blocks 
     unsigned pRemain, bRemain;
     PieceInfo *p;
+    lt::torrent_info *torrent;
+    lt::storage_interface *st;
 
     // TODO
     // let t0 be start of speed measure, v[i] be instant speed at i step

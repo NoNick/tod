@@ -17,10 +17,12 @@ private:
 // watch pieces and display progress
 class ProgressWatcher : public PieceWatcher {
 public:
-    ProgressWatcher(const lt::file_storage &fs, ProgressBar *pb, Label *l) : PieceWatcher(fs), bar(pb), info(l) {};
+    ProgressWatcher(lt::torrent_info *t, lt::storage_interface *st, ProgressBar *pb, Label *l) : PieceWatcher(t, st), bar(pb), info(l) {};
     void setInfoLabel(Label *l);
     void setPresent(lt::file::iovec_t const *buf, int num_bufs, int piece, int offset);
+    void checkPresence();
 private:
+    void updateInfo();
     ProgressBar *bar;
     Label *info;    
 };
