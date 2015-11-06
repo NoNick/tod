@@ -5,22 +5,22 @@
 #include <libtorrent/storage.hpp>
 #include "helpers.h"
 #include "remote_interface.h"
-#include "swimming_iov.h"
+#include "iov_factory.h"
+#include "ui/text_area.h"
 
 #define success(X, Y) if ((X) == -1) { \
-                          std::cerr << Y << "\n"; \
-                          return -1; }
-#define successE(X) if ((X) == -1) throw std::exception();
+	                  ERR(Y); \
+                      }
 
 Remote::Remote(int fd) : fd(fd) {}
 
 Remote::~Remote() { close(fd); }
 
-void receiveVec(int fd, iov *bufs, int num_bufs) {
+void receiveVec(int fd, lt::file::iovec_t *bufs, int num_bufs) {
     for (int i = 0; i < num_bufs; i++) {
 	size_t sz = 0;
-	successE(read_(fd, &sz, sizeof(size_t)));
-	successE(read_(fd, bufs[i].iov_base, sz));
+	success(read_(fd, &sz, sizeof(size_t)), REMOTE_ERR);
+	success(read_(fd, bufs[i].iov_base, sz), REMOTE_ERR);
 	bufs[i].iov_len = sz;
     }
 }
@@ -45,7 +45,7 @@ int Remote::listenStorage(lt::default_storage &def, ProgressWatcher *pw) {
 	lt::storage_error err;
 	WriteRequest req(0, 0, 0, 0, 0);
 	success(read_(fd, &req, sizeof(WriteRequest)), REMOTE_ERR);
-	SwimmingIOV *bufs = new SwimmingIOV[req.num_bufs];
+	lt::file::iovec_t *bufs = IOVFactory::alloc(req.num_bufs);
 	try {
 	    receiveVec(fd, bufs, req.num_bufs);
 	} catch (std::exception e) {
@@ -55,7 +55,7 @@ int Remote::listenStorage(lt::default_storage &def, ProgressWatcher *pw) {
 	}
 	def.writev(bufs, req.num_bufs, req.piece, req.offset, req.flags, err);
 	pw->setPresent(bufs, req.num_bufs, req.piece, req.offset);
-	delete[] bufs;
+	IOVFactory::dealloc(bufs, req.num_bufs);
 	break; }
     }
 	  

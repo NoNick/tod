@@ -63,29 +63,23 @@ private:
     // number of pieces/blocks
     unsigned pNum, bNum;
     // number of blocks 
-    unsigned pRemain, bRemain;
+    unsigned pRemain = 0, bRemain = 0;
     PieceInfo *p;
     lt::torrent_info *torrent;
     lt::storage_interface *st;
 
-    // TODO
-    // let t0 be start of speed measure, v[i] be instant speed at i step
-    // then average weighted speed would be Sum[v[t] * ((t_i - t0) + dt), i in [2 .. n]] / Sum[t_i - t0 + dt, i in [2 .. n]] = W / T, where dt = t_i - t_(i - 1)
-    // given W ant T at n step, consider (n + 1) step:
-    // at (n + 1) step B bytes were received
-    // then new speed would be (W + v[n + 1] * (t_(n + 1) - t0 + dt)) / (T + (t' - t0) + dt)
-    // which is (W + k * B / (t_(n + 1) - t_n)) / (T + k)
-    // where k = 2t_(n + 1) - t0 - t_n
-    // so maintain W, T, t0 (start/resume time), t (last measure time)
-    // in practice dt sometimes too short, so if dt is less then 2/3 of average deltas
-    // then pretend n and (n + 1) steps are just signle step
-    //mcs T;
-    //unsigned long W, rest;
-    //moment t0, t;
-    // weighted average speed, bytes per sec
-    unsigned speed = 0, cnt;
-    void updateSpeed(unsigned bytes);
-    bool invalidTime;
-    moment t0, t;
+    // let's update speed every INTERVAL mcs
+    const unsigned long INTERVAL = 1000000;
+    // consider last NUM measures
+    const unsigned NUM = 10;
     unsigned long B = 0;
+    mcs T;
+    // last update
+    moment t;
+    unsigned speed = 0;
+    // downloaded since last update
+    void updateSpeed(unsigned bytes);
+    // downloaded during last INTERVAL mcs
+    void makeMeasure(unsigned bytes);
+    bool invalidTime;
 };

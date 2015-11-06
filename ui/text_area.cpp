@@ -3,6 +3,13 @@
 
 #define ceilInt(x, y) (x % y ? x / y + 1 : x / y)
 
+TextArea *TextArea::last = NULL;
+OutMode TextArea::mode = OutMode::VERBOSE;
+
+TextArea::TextArea(Screen *s, unsigned width, unsigned height) : Widget(s), width(width), height(height) {
+    last = this; 
+}
+
 void TextArea::putLn(std::string str) {
     int len = str.length();
     for (unsigned i = 0; i < ceilInt(len, width); i++) {
@@ -26,5 +33,11 @@ void TextArea::draw(unsigned width) {
 	for (unsigned i = 0; i < height - text.size() - 1; i++) {
 	    std::cout << "\n";
 	}
+    }
+}
+
+void TextArea::print(std::string line) {
+    if (last != NULL) {
+	last->putLn(line);
     }
 }

@@ -4,8 +4,9 @@
 #include <libtorrent/storage.hpp>
 #include <libtorrent/storage_defs.hpp>
 #include <libtorrent/torrent_handle.hpp>
+#include <libtorrent/torrent_status.hpp>
 #include "remote_interface.h"
-#include "swimming_iov.h"
+#include "iov_factory.h"
 
 #define lt libtorrent
 

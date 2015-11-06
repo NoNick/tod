@@ -43,7 +43,7 @@ void MirrorStorage::sendBufs(lt::file::iovec_t const *bufs, int num_bufs) {
 }
 
 void MirrorStorage::send(WriteRequest req) {
-    SwimmingIOV *bufs = new SwimmingIOV[req.num_bufs];
+    lt::file::iovec_t *bufs = IOVFactory::alloc(req.num_bufs);
     bufs[req.num_bufs - 1].iov_len = req.last;
     
     lt::storage_error err;
@@ -54,7 +54,7 @@ void MirrorStorage::send(WriteRequest req) {
 	success(write_(fd, &req, sizeof(WriteRequest)), REMOTE_ERR);
 	sendBufs(bufs, req.num_bufs);
     }
-    delete[] bufs;
+    IOVFactory::dealloc(bufs, req.num_bufs);
 }
 
 void MirrorStorage::doCheck(lt::torrent_handle *th, const lt::file_storage *fs) {

@@ -9,8 +9,7 @@ pkg_search_module(LIBTORRENT REQUIRED libtorrent-rasterbar)
 pkg_search_module(TBB REQUIRED tbb)
 
 include_directories(${LIBTORRENT_INCLUDE_DIRS}
-                    ${Boost_INCLUDE_DIRS}
-		    ${OpenMP_INCLUDE_DIRS})
+                    ${Boost_INCLUDE_DIRS})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TBB_CXX_FLAGS} -pedantic -g -std=c++11 -Wall -O0")
 
@@ -27,14 +26,14 @@ add_executable(tod main.cpp
 		   remote_interface.cpp
 		   mirror_storage.cpp
 		   piece_watcher.cpp
-		   swimming_iov.cpp
+		   iov_factory.cpp
 		   ${UI_SRC})
 
 add_executable(toc client.cpp
 		   remote_interface.cpp
 		   helpers.cpp
 		   piece_watcher.cpp
-		   swimming_iov.cpp
+		   iov_factory.cpp
 		   ${UI_SRC})
 
 target_link_libraries(tod ${Boost_LIBRARIES} ${LIBTORRENT_LIBRARIES} ${TBB_LIBRARIES})

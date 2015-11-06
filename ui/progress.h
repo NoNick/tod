@@ -3,6 +3,7 @@
 #include "widget.h"
 #include "label.h"
 #include "../piece_watcher.h"
+#include "../iov_factory.h"
 
 #define lt libtorrent
 

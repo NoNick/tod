@@ -7,8 +7,6 @@
 
 #define lt libtorrent
 
-typedef lt::file::iovec_t iov;
-
 const char * const REMOTE_ERR = "Connection problem, aborting query.";
 
 enum Query {

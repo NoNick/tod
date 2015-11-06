@@ -4,8 +4,9 @@
 #include "piece_watcher.h"
 #include "remote_interface.h"
 #include "helpers.h"
-#include "swimming_iov.h"
+#include "iov_factory.h"
 #include "txt.cpp"
+#include "ui/text_area.h"
 
 #define ceilInt(x, y) (x % y ? x / y + 1 : x / y)
 
@@ -34,7 +35,7 @@ bool PieceWatcher::correctPiece(int piece) {
     lt::storage_error err;
     size_t len = torrent->piece_size(piece);
     unsigned sz = ceilInt(len, PieceInfo::BLOCK_SIZE);
-    SwimmingIOV *iov = new SwimmingIOV[sz];
+    lt::file::iovec_t *iov = IOVFactory::alloc(sz);
     unsigned last = len % PieceInfo::BLOCK_SIZE;
     iov[sz - 1].iov_len = last ? last : PieceInfo::BLOCK_SIZE;
     st->readv(iov, sz, piece, 0, 0, err);
@@ -43,19 +44,16 @@ bool PieceWatcher::correctPiece(int piece) {
 	return false;
     }
     
-    for (SwimmingIOV *cur = iov; cur != (iov + sz); cur++) {
+    for (lt::file::iovec_t *cur = iov; cur != (iov + sz); cur++) {
 	hsr.update((char*)cur->iov_base, (int)cur->iov_len);
     }
-    delete[] iov;
+    IOVFactory::dealloc(iov, sz);
     return hsr.final() == torrent->hash_for_piece(piece);
 }   
 
 PieceWatcher::PieceWatcher(lt::torrent_info *t,
 			   lt::storage_interface *st) : torrent(t), st(st) {
     invalidTime = true;
-    cnt = 0;
-    B = 0;
-    //rest = 0;
 
     lt::file_storage fs = torrent->files();
     pNum = pRemain = fs.num_pieces();
@@ -64,6 +62,7 @@ PieceWatcher::PieceWatcher(lt::torrent_info *t,
     p = new PieceInfo[pNum];
     for (unsigned i = 0; i < pNum - 1; i++) {
 	p[i].setSize(bLen);
+	p[i].finished = false;
     }
     p[pNum - 1].setSize(fs.piece_size(pNum - 1));
     bNum = bRemain = (pNum - 1) * bLen +
@@ -75,13 +74,17 @@ PieceWatcher::~PieceWatcher() {
 }
 
 void PieceWatcher::checkPresence(Remote &r) {
+    LOG("Veryfing local data...");
+    unsigned cnt = 0;
     for (unsigned i = 0; i < pNum; i++) {
 	if (!p[i].finished && correctPiece(i)) {
 	    setPresent_(torrent->piece_size(i), i, 0);
+	    cnt++;
 	} else {
 	    r.requestPiece(i);
 	}
     }
+    LOG(std::to_string(cnt * 100 / pNum) + "% of data found");
 }
 
 bool PieceWatcher::setPresent_(unsigned sz, int piece, int offset) {
@@ -101,54 +104,44 @@ void PieceWatcher::setPresent(lt::file::iovec_t const *buf, int num_bufs, int pi
     updateSpeed(sz);
 }
 
+void PieceWatcher::makeMeasure(unsigned bytes) {
+    unsigned v = bytes * 1000000 / INTERVAL;
+    if (speed == 0) {
+	speed = v;
+    } else {
+	// kind of average of NUM measurements
+	speed = (speed * (NUM - 1) + v) / NUM;
+    }
+}
+
 void PieceWatcher::updateSpeed(unsigned bytes) {
     if (invalidTime) {
 	invalidTime = false;
-	t0 = t = NOW;
-	//W = 0;
-	//T = mcs(0);
-	//speed = 0;
+	t = NOW;
+	T = mcs(0);
+	speed = 0;
 	B = 0;
 	return;
     }
 
     moment now = NOW;
-    unsigned long dt = (now - t).count();
-    if (dt > 0) {
-	speed = bytes * 1000000 / dt;
-    }
+    T += (now - t);
     B += bytes;
     t = now;
-    
-    /*moment now = NOW;
-    mcs k = now - t0 + now - t;
-    unsigned long dt = (now - t).count();
-    cnt++;
-    if (dt < 2 * (now - t0).count() / cnt / 3) {
-	rest += bytes;
-	return;
-    }
-    bytes += rest;
-    rest = 0;
-    t = now;
-	
-    //printf("%20lu %20lu\n", dt, W);
-    T += k;
-    W += k.count() * bytes / dt;
-    if (T.count() == 0) {
-	speed = 0;
-    } else {
-	speed = W * 1000000 / T.count();
-    }
-    printf("%10lu, %10lu, %10u, %10lu\n", speed, dt, bytes, (now - t0).count());*/
+    while (T >= mcs(INTERVAL)) {
+	unsigned long b = B * INTERVAL / T.count();
+	B -= b;
+	T -= mcs(INTERVAL);
+	makeMeasure(b);
+    }	
 }
 
 unsigned PieceWatcher::getEstimated() {
-    if (speed == 0 || B == 0) {
+    if (speed == 0 || bRemain == 0) {
 	return 0;
     }
 
-    return PieceInfo::BLOCK_SIZE * bRemain * (t - t0).count() / B / 1000000;
+    return PieceInfo::BLOCK_SIZE * bRemain / speed;
 }
 
 unsigned PieceWatcher::getProgress() {
