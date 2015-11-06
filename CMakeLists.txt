@@ -11,7 +11,7 @@ pkg_search_module(TBB REQUIRED tbb)
 include_directories(${LIBTORRENT_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TBB_CXX_FLAGS} -pedantic -g -std=c++11 -Wall -O0")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TBB_CXX_FLAGS} -pedantic -g -std=c++11 -Wall -pthread")
 
 set(UI_SRC ui/screen.cpp
            ui/progress.cpp
