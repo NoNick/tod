@@ -31,7 +31,7 @@ int main(int ac, char *av[]) {
     }
     verbose = vm.count("verbose");
     storage = vm.count("storage") ? vm["storage"].as<string>() : ".";
-    port = vm.count("port") ? vm["storage"].as<string>() : "1234";
+    port = vm.count("port") ? vm["port"].as<string>() : "1234";
 
     Server *serv;
     try {
