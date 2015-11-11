@@ -16,6 +16,10 @@ void setHints(struct addrinfo *info) {
     info->ai_family = AF_INET;
     info->ai_socktype = SOCK_STREAM;
     info->ai_protocol = IPPROTO_TCP;
+    info->ai_flags = AI_PASSIVE;
+    info->ai_canonname = NULL;
+    info->ai_addr = NULL;
+    info->ai_next = NULL;
 }
 
 /*
